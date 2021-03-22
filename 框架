@@ -1,0 +1,81 @@
+spring的bean注入流程
+spring依赖注入的方式：通过构造方法注入(constructor-arg指定name和value)，通过set方法注入(property指定name和value)，
+                                  通过自动装配（在<bean  autowire="byName>标签中指定autowire），通过注解（在需要注入得属性上加@Autowire）
+spring的Ioc（控制反转）容器：beanfactory（低级容器，里面主要有两个方法，添加和取出bean的方法）
+                                             ApplicationContext（高级容器，它继承了多个接口，也多了很多方法（有一些集合操作方法）），
+                                         但是它的Ioc是依赖于beanfactory。因为在获取bean的时候，ApplicationContext先要调用getBeanFactory，再通过beanFactory调用getBean方法。
+                                                   
+                   springIOC实现流程：1.构建一个ClassPathXmlApplicationContext，加载配置文件，调用refresh方法，解析成BeanDefinition放在一个map里面
+                                   2.调用getbean的时候，从BeanDefinition的map里面拿出Class对象来实例化。如果bean之间存在依赖关系，则使用递归来调用。
+
+     创建对象的时机：BeanFactory创建对象方式采用的是延迟加载，是在具体调用getbean方法的时候创建对象（实现类：XmlBeanFactory）
+                              ApplicationContext 是在加载配置文件的时候就创建对象（实现类：ClassPathXmlApplicationContext）
+
+一般都是用  ApplicationContext 的实现类ClassPathXmlApplicationContext来执行。
+
+
+
+spring的事务隔离界别： 实现@Transactional（）
+spring事务本质上使用数据库锁，只不过他是基于spring的aop实现的。
+1) REQUIRED（默认属性）
+支持当前事务。如果没有事务则开启一个新的事务。 
+
+2) SUPPORTS 
+支持当前事务，如果没有事务，就以非事务方式执行。 
+
+3) MANDATORY 
+支持当前事务，如果当前没有事务，就抛出异常。 
+
+
+4) NOT_SUPPORTED 
+以非事务运行，如果有，就把当前事务挂起。 
+
+
+5) NEVER 
+以非事务方式执行，如果当前存在事务，则抛出异常。 
+
+
+6) REQUIRES_NEW 
+新建事务，如果当前存在事务，把当前事务挂起。 
+
+
+7) NESTED 
+支持内嵌的一个事务过程
+内嵌事务：就是内层事务依赖于外层事务。外层事务失败时，会回滚内层事务所做的动作。而内层事务操作失败并不会引起外层事务的回滚。
+
+aop的底层实现形式：动态代理（反射机制）
+有接口情况，使用JDK动态代理（创建相同接口实现类的代理对象，来增强实现类的方法）。使用的是Proxy类的newProxyInstance的方法来创建
+没有接口，使用CGLIB动态代理（创建当前类的子类的代理对象，来增强父类的方法）。主要是使用一个ASM字节码的编译器来创建。
+性能上的话，可能CGLIB在创建对象的速度要慢一些，但在运行上效率要更高一些。
+
+
+一级缓存和二级缓存：
+一级缓存的缓存域SQL Session，SqlSession是基于connection的新式。在同一个SQL Session中，执行相同的SQl查询时，第一次会去查询数据库，第二次则直接在缓存中取。
+但当执行了增删改操作并且commit之后会清除缓存
+二级缓存的作用域是mapper，在第一次查询回去数据库中查，第二次会去比对namespace是否是同一个mapper，相同则走缓存。增删改操作也会清除缓存。
+二级缓存设置：<setting name="cacheEnabled"value="true"/>
+ 开启二级缓存要在缓存的对象上实现Serializable接口，使其可序列化
+ 缓存是以键值对的形式存储。
+
+mybatiss的实现形式（3种）主要是指定xml文件，通过接口调用方法
+<mapper resource="dao.xml"/>
+<select id="querySub" resultMap="subMap" parameterType="java.lang.Integer">
+mybatis引入配置文件（resource  url  class）
+
+
+restful：
+    @RequestMapping("restful/user")
+    @Controller
+    public class RestUserController {
+
+@RequestMapping(value = "{id}", method = RequestMethod.GET)
+        @ResponseBody
+        public ResponseEntity<User> queryUserById(@PathVariable("id") Long id) {
+          public ResponseEntity<Void> deleteUser(@RequestParam(value = "id", defaultValue = "0") Long id) {
+
+springboot的自动装配：
+使用@EnableAutoConfiguration开启springboot的自动装配
+然后去META-INF下的一个properties文件中去加载自动装配的一些条件，根据这些条件去找符合条件的配置类。
+具体是使用键值对的方式添加@Configuration符合条件的配置类的全路径类名
+拿到配置类之后就把配置类里面的bean加载到IOC容器中，就不用配置文件去单独配置。
+
